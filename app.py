@@ -4,10 +4,8 @@ from openai_utils import chat_with_model, calculate_message_cost
 
 st.title("GPT Model Interaction App")
 
-openai_api_key = st.secrets["OPENAI_API_KEY"]
-
-# API key input
-api_key = st.text_input("Enter your OpenAI API key:", type="password")
+# Use the API key from secrets
+api_key = st.secrets["OPENAI_API_KEY"]
 
 # Model selection
 model = st.selectbox("Select GPT model:", ["gpt-4o-mini", "gpt-4o"])
@@ -16,9 +14,7 @@ model = st.selectbox("Select GPT model:", ["gpt-4o-mini", "gpt-4o"])
 user_message = st.text_area("Enter your message:")
 
 if st.button("Send"):
-    if not api_key:
-        st.error("Please enter your API key.")
-    elif not user_message:
+    if not user_message:
         st.error("Please enter a message.")
     else:
         with st.spinner("Generating response..."):
@@ -40,13 +36,12 @@ if st.button("Send"):
                 })
                 st.table(usage_df)
             else:
-                st.error("Failed to get a response. Please check your API key and try again.")
+                st.error("Failed to get a response. Please check the API key in the secrets file.")
 
 st.sidebar.markdown("""
 ## How to use this app:
-1. Enter your OpenAI API key
-2. Select the GPT model you want to use
-3. Type your message in the text area
-4. Click 'Send' to get a response
-5. View the assistant's response and token usage information
+1. Select the GPT model you want to use
+2. Type your message in the text area
+3. Click 'Send' to get a response
+4. View the assistant's response and token usage information
 """)

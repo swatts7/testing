@@ -87,12 +87,20 @@ st.sidebar.write(f"Completed: {completed_operators}/{total_operators}")
 # Export results button
 if st.sidebar.button("Export Results"):
     if st.session_state.results:
-        csv_filename = f"optimized_summaries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow(['Operator', 'Summary'])
-            for operator, summary in st.session_state.results.items():
-                writer.writerow([operator, summary])
-        st.sidebar.success(f"Results exported to {csv_filename}")
+        csv_buffer = io.StringIO()
+        writer = csv.writer(csv_buffer)
+        writer.writerow(['Operator', 'Summary'])
+        for operator, summary in st.session_state.results.items():
+            writer.writerow([operator, summary])
+        
+        csv_string = csv_buffer.getvalue()
+        
+        st.sidebar.download_button(
+            label="Download CSV",
+            data=csv_string,
+            file_name=f"optimized_summaries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv"
+        )
+        st.sidebar.success("CSV file ready for download!")
     else:
         st.sidebar.warning("No results to export yet.")

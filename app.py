@@ -1,47 +1,75 @@
 import streamlit as st
 import pandas as pd
-from openai_utils import chat_with_model, calculate_message_cost
+import json
+from openai_utils import chat_with_model
 
-st.title("GPT Model Interaction App")
+st.title("Master Summary Fine Tuning")
 
-# Use the API key from secrets
-api_key = st.secrets["OPENAI_API_KEY"]
+# Initialize session state for system prompt if it doesn't exist
+if 'system_prompt' not in st.session_state:
+    with open("system_prompt.txt", "r") as file:
+        st.session_state.system_prompt = file.read()
 
-# Model selection
-model = st.selectbox("Select GPT model:", ["gpt-4o-mini", "gpt-4o"])
+# Load the CSV file
+@st.cache_data
+def load_data():
+    return pd.read_csv("master_summary_data.csv")
 
-# User input
-user_message = st.text_area("Enter your message:")
+df = load_data()
 
-if st.button("Send"):
-    if not user_message:
-        st.error("Please enter a message.")
+# Display editable system prompt in an accordion
+with st.expander("Edit System Prompt"):
+    edited_system_prompt = st.text_area("System Prompt", st.session_state.system_prompt, height=300, key="system_prompt_input")
+    
+    # Update session state when the system prompt is edited
+    if edited_system_prompt != st.session_state.system_prompt:
+        st.session_state.system_prompt = edited_system_prompt
+
+# Dropdown for operator selection
+operator_names = df['operator_name'].tolist()
+selected_operator = st.selectbox("Select an operator:", operator_names)
+
+# Get the data for the selected operator
+selected_data = df[df['operator_name'] == selected_operator].iloc[0]
+
+# Create the user input JSON
+user_input = {
+    "casino_name": selected_data['operator_name'],
+    "players_summary": selected_data['comment_meta_summary'],
+    "experts_summary": selected_data['review_meta_summary']
+}
+
+# Display the user input
+st.subheader("User Input")
+st.text_area("JSON Input", json.dumps(user_input, indent=2), height=200)
+
+# Output text area
+st.subheader("Output")
+output = st.empty()
+
+# Generate Summary button
+if st.button("Generate Summary"):
+    # Prepare the messages for the API call
+    messages = [
+        {"role": "system", "content": st.session_state.system_prompt},
+        {"role": "user", "content": json.dumps(user_input)}
+    ]
+    
+    # Call the OpenAI API
+    response, usage_stats, _ = chat_with_model(st.secrets["OPENAI_API_KEY"], messages, None, "gpt-4o", "text")
+    
+    if response:
+        output.text_area("Generated Summary", response, height=200)
+        
+        st.subheader("Token Usage:")
+        usage_df = pd.DataFrame({
+            "Metric": ["Prompt Tokens", "Completion Tokens", "Total Tokens"],
+            "Value": [
+                usage_stats.prompt_tokens,
+                usage_stats.completion_tokens,
+                usage_stats.total_tokens
+            ]
+        })
+        st.table(usage_df)
     else:
-        with st.spinner("Generating response..."):
-            response, usage_stats, cost = chat_with_model(api_key, None, user_message, model, "text")
-            
-            if response:
-                st.subheader("Assistant's Response:")
-                st.write(response)
-                
-                st.subheader("Token Usage:")
-                usage_df = pd.DataFrame({
-                    "Metric": ["Prompt Tokens", "Completion Tokens", "Total Tokens", "Cost"],
-                    "Value": [
-                        usage_stats.prompt_tokens,
-                        usage_stats.completion_tokens,
-                        usage_stats.total_tokens,
-                        f"${cost:.6f}"
-                    ]
-                })
-                st.table(usage_df)
-            else:
-                st.error("Failed to get a response. Please check the API key in the secrets file.")
-
-st.sidebar.markdown("""
-## How to use this app:
-1. Select the GPT model you want to use
-2. Type your message in the text area
-3. Click 'Send' to get a response
-4. View the assistant's response and token usage information
-""")
+        st.error("Failed to generate summary. Please try again.")

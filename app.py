@@ -68,7 +68,7 @@ if st.button("Generate Summary"):
     if response:
         output = response
         st.session_state.results[selected_operator] = output
-        st.experimental_rerun()
+        st.rerun()
     else:
         st.error("Failed to generate summary. Please try again.")
 

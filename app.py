@@ -4,6 +4,7 @@ import json
 from openai_utils import chat_with_model
 import csv
 from datetime import datetime
+import io
 
 st.title("Master Summary Fine Tuning")
 

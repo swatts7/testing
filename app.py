@@ -19,6 +19,9 @@ if 'completed_operators' not in st.session_state:
 if 'results' not in st.session_state:
     st.session_state.results = {}
 
+if 'current_operator_index' not in st.session_state:
+    st.session_state.current_operator_index = {}
+
 # Dataset selection
 dataset_type = st.selectbox("Select Dataset:", ["Master Summary", "Comment Summary", "Reviews Summary"])
 
@@ -59,13 +62,16 @@ if dataset_type not in st.session_state.completed_operators:
 if dataset_type not in st.session_state.results:
     st.session_state.results[dataset_type] = {}
 
+if dataset_type not in st.session_state.current_operator_index:
+    st.session_state.current_operator_index[dataset_type] = 0
+
 # Display editable system prompt in an accordion
 with st.expander("Edit System Prompt"):
     edited_system_prompt = st.text_area("System Prompt", st.session_state.system_prompt[dataset_type], height=300, key=f"system_prompt_input_{dataset_type}")
     if edited_system_prompt != st.session_state.system_prompt[dataset_type]:
         st.session_state.system_prompt[dataset_type] = edited_system_prompt
 
-# Dropdown for operator selection
+# Prepare operator names
 if dataset_type == "Master Summary":
     operator_names = data['operator_name'].tolist()
 elif dataset_type == "Comment Summary":
@@ -73,7 +79,15 @@ elif dataset_type == "Comment Summary":
 elif dataset_type == "Reviews Summary":
     operator_names = [f"Operator {item['operator_id']}" for item in data]
 
-selected_operator = st.selectbox("Select an operator:", operator_names)
+# Dropdown for operator selection
+selected_operator = st.selectbox("Select an operator:", operator_names, index=st.session_state.current_operator_index[dataset_type])
+
+# Next button
+col1, col2 = st.columns([1, 5])
+with col1:
+    if st.button("Next"):
+        st.session_state.current_operator_index[dataset_type] = (st.session_state.current_operator_index[dataset_type] + 1) % len(operator_names)
+        st.rerun()
 
 # Get the data for the selected operator
 if dataset_type == "Master Summary":

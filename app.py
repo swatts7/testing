@@ -35,10 +35,10 @@ data = load_data(dataset_type)
 # Load system prompt
 if dataset_type not in st.session_state.system_prompt:
     if dataset_type == "Master Summary":
-        with open("system_prompt.txt", "r") as file:
+        with open("master_system_prompt.txt", "r") as file:
             st.session_state.system_prompt[dataset_type] = file.read()
     elif dataset_type == "Comment Summary":
-        with open("comments_meta/comments_system_prompt.txt", "r") as file:
+        with open("comments_system_prompt.txt", "r") as file:
             st.session_state.system_prompt[dataset_type] = file.read()
 
 # Initialize dataset-specific session state

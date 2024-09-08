@@ -52,7 +52,7 @@ st.text_area("JSON Input", json.dumps(user_input, indent=2), height=200)
 # Output text area
 st.subheader("Output")
 output = st.text_area("Generated Summary", 
-                      st.session_state.results.get(selected_operator, {}).get('summary', ''), 
+                      st.session_state.results.get(selected_operator, ''), 
                       height=200, 
                       key="output_area")
 
@@ -63,24 +63,18 @@ if st.button("Generate Summary"):
         {"role": "user", "content": json.dumps(user_input)}
     ]
     
-    response, usage_stats, _ = chat_with_model(st.secrets["OPENAI_API_KEY"], messages, None, "gpt-4o", "text")
+    response, _, _ = chat_with_model(st.secrets["OPENAI_API_KEY"], messages, None, "gpt-4o", "text")
     
     if response:
         output = response
-        st.session_state.results[selected_operator] = {
-            'summary': output,
-            'usage_stats': usage_stats._asdict()
-        }
+        st.session_state.results[selected_operator] = output
         st.experimental_rerun()
     else:
         st.error("Failed to generate summary. Please try again.")
 
 # Save and Complete button
 if st.button("Save and Complete"):
-    st.session_state.results[selected_operator] = {
-        'summary': output,
-        'usage_stats': st.session_state.results.get(selected_operator, {}).get('usage_stats', {})
-    }
+    st.session_state.results[selected_operator] = output
     st.session_state.completed_operators.add(selected_operator)
     st.success(f"Saved and completed summary for {selected_operator}")
 
@@ -96,29 +90,9 @@ if st.sidebar.button("Export Results"):
         csv_filename = f"optimized_summaries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(['Operator', 'Summary', 'Prompt Tokens', 'Completion Tokens', 'Total Tokens'])
-            for operator, data in st.session_state.results.items():
-                writer.writerow([
-                    operator,
-                    data['summary'],
-                    data['usage_stats'].get('prompt_tokens', ''),
-                    data['usage_stats'].get('completion_tokens', ''),
-                    data['usage_stats'].get('total_tokens', '')
-                ])
+            writer.writerow(['Operator', 'Summary'])
+            for operator, summary in st.session_state.results.items():
+                writer.writerow([operator, summary])
         st.sidebar.success(f"Results exported to {csv_filename}")
     else:
         st.sidebar.warning("No results to export yet.")
-
-# Display token usage for current operator
-if selected_operator in st.session_state.results:
-    usage_stats = st.session_state.results[selected_operator]['usage_stats']
-    st.subheader("Token Usage:")
-    usage_df = pd.DataFrame({
-        "Metric": ["Prompt Tokens", "Completion Tokens", "Total Tokens"],
-        "Value": [
-            usage_stats.get('prompt_tokens', ''),
-            usage_stats.get('completion_tokens', ''),
-            usage_stats.get('total_tokens', '')
-        ]
-    })
-    st.table(usage_df)

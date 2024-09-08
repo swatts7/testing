@@ -71,7 +71,7 @@ if dataset_type == "Master Summary":
 elif dataset_type == "Comment Summary":
     operator_names = [item['casino_name'] for item in data.values()]
 elif dataset_type == "Reviews Summary":
-    operator_names = [item['operator_name'] for item in data]
+    operator_names = [f"Operator {item['operator_id']}" for item in data]
 
 selected_operator = st.selectbox("Select an operator:", operator_names)
 
@@ -89,7 +89,7 @@ elif dataset_type == "Comment Summary":
     operator_id = next(key for key in data.keys() if data[key]['casino_name'] == selected_operator)
     user_input = json.dumps(selected_data)
 elif dataset_type == "Reviews Summary":
-    selected_data = next(item for item in data if item['operator_name'] == selected_operator)
+    selected_data = next(item for item in data if f"Operator {item['operator_id']}" == selected_operator)
     operator_id = selected_data['operator_id']
     user_input = json.dumps(selected_data['unique_reviews'])
 
@@ -160,7 +160,7 @@ if st.sidebar.button("Export Results"):
                 operator_id = next(key for key in data.keys() if data[key]['casino_name'] == operator)
                 user_input = json.dumps(operator_data)
             elif dataset_type == "Reviews Summary":
-                operator_data = next(item for item in data if item['operator_name'] == operator)
+                operator_data = next(item for item in data if f"Operator {item['operator_id']}" == operator)
                 operator_id = operator_data['operator_id']
                 user_input = json.dumps(operator_data['unique_reviews'])
             

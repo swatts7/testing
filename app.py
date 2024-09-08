@@ -28,10 +28,10 @@ def load_data(dataset_type):
     if dataset_type == "Master Summary":
         return pd.read_csv("master_summary_data.csv")
     elif dataset_type == "Comment Summary":
-        with open("comments_meta/comments_data.json", "r") as f:
+        with open("comments_data.json", "r") as f:
             return json.load(f)
     elif dataset_type == "Reviews Summary":
-        with open("reviews_meta/reviews.json", "r") as f:
+        with open("reviews.json", "r") as f:
             return json.load(f)
 
 data = load_data(dataset_type)
@@ -39,11 +39,11 @@ data = load_data(dataset_type)
 # Load system prompt
 if dataset_type not in st.session_state.system_prompt:
     if dataset_type == "Master Summary":
-        file_path = "master_summary_meta/master_summary_system_prompt.txt"
+        file_path = "master_summary_system_prompt.txt"
     elif dataset_type == "Comment Summary":
-        file_path = "comments_meta/comments_system_prompt.txt"
+        file_path = "comments_system_prompt.txt"
     elif dataset_type == "Reviews Summary":
-        file_path = "reviews_meta/reviews_system_prompt.txt"
+        file_path = "reviews_system_prompt.txt"
     
     if os.path.exists(file_path):
         with open(file_path, "r") as file:

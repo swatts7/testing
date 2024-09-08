@@ -10,7 +10,7 @@ st.title("Master Summary Fine Tuning")
 
 # Initialize session state
 if 'system_prompt' not in st.session_state:
-    with open("system_prompt.txt", "r") as file:
+    with open("master_system_prompt.txt", "r") as file:
         st.session_state.system_prompt = file.read()
 
 if 'completed_operators' not in st.session_state:

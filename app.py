@@ -128,7 +128,7 @@ if st.button("Generate Summary"):
         {"role": "user", "content": user_input}
     ]
     
-    response, _, _ = chat_with_model(st.secrets["OPENAI_API_KEY"], messages, None, "gpt-4o", "text")
+    response, _, _ = chat_with_model(st.secrets["OPENAI_API_KEY"], messages, None, "gpt-4o-mini", "text")
     
     if response:
         st.session_state.results[dataset_type][selected_operator] = response

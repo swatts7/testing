@@ -27,7 +27,7 @@ def load_data(dataset_type):
     if dataset_type == "Master Summary":
         return pd.read_csv("master_summary_data.csv")
     elif dataset_type == "Comment Summary":
-        with open("comments_meta/comments_data.json", "r") as f:
+        with open("comments_data.json", "r") as f:
             return json.load(f)
 
 data = load_data(dataset_type)

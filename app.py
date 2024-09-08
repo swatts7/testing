@@ -5,6 +5,7 @@ from openai_utils import chat_with_model
 import csv
 from datetime import datetime
 import io
+import os
 
 st.title("Dataset Fine Tuning")
 
@@ -19,7 +20,7 @@ if 'results' not in st.session_state:
     st.session_state.results = {}
 
 # Dataset selection
-dataset_type = st.selectbox("Select Dataset:", ["Master Summary", "Comment Summary"])
+dataset_type = st.selectbox("Select Dataset:", ["Master Summary", "Comment Summary", "Reviews Summary"])
 
 # Load data based on dataset type
 @st.cache_data
@@ -27,7 +28,10 @@ def load_data(dataset_type):
     if dataset_type == "Master Summary":
         return pd.read_csv("master_summary_data.csv")
     elif dataset_type == "Comment Summary":
-        with open("comments_data.json", "r") as f:
+        with open("comments_meta/comments_data.json", "r") as f:
+            return json.load(f)
+    elif dataset_type == "Reviews Summary":
+        with open("reviews_meta/reviews.json", "r") as f:
             return json.load(f)
 
 data = load_data(dataset_type)
@@ -35,11 +39,18 @@ data = load_data(dataset_type)
 # Load system prompt
 if dataset_type not in st.session_state.system_prompt:
     if dataset_type == "Master Summary":
-        with open("master_system_prompt.txt", "r") as file:
-            st.session_state.system_prompt[dataset_type] = file.read()
+        file_path = "master_summary_meta/master_summary_system_prompt.txt"
     elif dataset_type == "Comment Summary":
-        with open("comments_system_prompt.txt", "r") as file:
+        file_path = "comments_meta/comments_system_prompt.txt"
+    elif dataset_type == "Reviews Summary":
+        file_path = "reviews_meta/reviews_system_prompt.txt"
+    
+    if os.path.exists(file_path):
+        with open(file_path, "r") as file:
             st.session_state.system_prompt[dataset_type] = file.read()
+    else:
+        st.error(f"System prompt file not found: {file_path}")
+        st.session_state.system_prompt[dataset_type] = ""
 
 # Initialize dataset-specific session state
 if dataset_type not in st.session_state.completed_operators:
@@ -57,8 +68,10 @@ with st.expander("Edit System Prompt"):
 # Dropdown for operator selection
 if dataset_type == "Master Summary":
     operator_names = data['operator_name'].tolist()
-else:
+elif dataset_type == "Comment Summary":
     operator_names = [item['casino_name'] for item in data.values()]
+elif dataset_type == "Reviews Summary":
+    operator_names = [item['operator_name'] for item in data]
 
 selected_operator = st.selectbox("Select an operator:", operator_names)
 
@@ -71,10 +84,14 @@ if dataset_type == "Master Summary":
         "players_summary": selected_data['comment_meta_summary'],
         "experts_summary": selected_data['review_meta_summary']
     })
-else:
+elif dataset_type == "Comment Summary":
     selected_data = next(item for item in data.values() if item['casino_name'] == selected_operator)
     operator_id = next(key for key in data.keys() if data[key]['casino_name'] == selected_operator)
     user_input = json.dumps(selected_data)
+elif dataset_type == "Reviews Summary":
+    selected_data = next(item for item in data if item['operator_name'] == selected_operator)
+    operator_id = selected_data['operator_id']
+    user_input = json.dumps(selected_data['unique_reviews'])
 
 # Display the user input
 st.subheader("User Input")
@@ -138,10 +155,14 @@ if st.sidebar.button("Export Results"):
                     "players_summary": operator_data['comment_meta_summary'],
                     "experts_summary": operator_data['review_meta_summary']
                 })
-            else:
+            elif dataset_type == "Comment Summary":
                 operator_data = next(item for item in data.values() if item['casino_name'] == operator)
                 operator_id = next(key for key in data.keys() if data[key]['casino_name'] == operator)
                 user_input = json.dumps(operator_data)
+            elif dataset_type == "Reviews Summary":
+                operator_data = next(item for item in data if item['operator_name'] == operator)
+                operator_id = operator_data['operator_id']
+                user_input = json.dumps(operator_data['unique_reviews'])
             
             # Write to CSV
             writer.writerow([operator_id, operator, st.session_state.system_prompt[dataset_type], user_input, summary])

@@ -86,22 +86,62 @@ st.sidebar.progress(completed_operators / total_operators)
 st.sidebar.write(f"Completed: {completed_operators}/{total_operators}")
 
 # Export results button
+# Export results button
 if st.sidebar.button("Export Results"):
     if st.session_state.results:
+        # Prepare CSV
         csv_buffer = io.StringIO()
         writer = csv.writer(csv_buffer)
-        writer.writerow(['Operator', 'Summary'])
+        writer.writerow(['operator_id', 'operator_name', 'system_prompt', 'user_input', 'output'])
+        
+        # Prepare JSONL
+        jsonl_buffer = io.StringIO()
+        
         for operator, summary in st.session_state.results.items():
-            writer.writerow([operator, summary])
+            # Get operator data
+            operator_data = df[df['operator_name'] == operator].iloc[0]
+            operator_id = operator_data['operator_id']
+            user_input = json.dumps({
+                "casino_name": operator_data['operator_name'],
+                "players_summary": operator_data['comment_meta_summary'],
+                "experts_summary": operator_data['review_meta_summary']
+            })
+            
+            # Write to CSV
+            writer.writerow([operator_id, operator, st.session_state.system_prompt, user_input, summary])
+            
+            # Write to JSONL
+            jsonl_entry = {
+                "messages": [
+                    {"role": "system", "content": st.session_state.system_prompt},
+                    {"role": "user", "content": user_input},
+                    {"role": "assistant", "content": summary}
+                ]
+            }
+            jsonl_buffer.write(json.dumps(jsonl_entry) + '\n')
         
         csv_string = csv_buffer.getvalue()
+        jsonl_string = jsonl_buffer.getvalue()
         
-        st.sidebar.download_button(
-            label="Download CSV",
-            data=csv_string,
-            file_name=f"optimized_summaries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv"
-        )
-        st.sidebar.success("CSV file ready for download!")
+        # Create download buttons
+        col1, col2 = st.sidebar.columns(2)
+        
+        with col1:
+            st.download_button(
+                label="Download CSV",
+                data=csv_string,
+                file_name=f"optimized_summaries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
+        
+        with col2:
+            st.download_button(
+                label="Download JSONL",
+                data=jsonl_string,
+                file_name=f"optimized_summaries_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl",
+                mime="application/jsonl"
+            )
+        
+        st.sidebar.success("CSV and JSONL files ready for download!")
     else:
         st.sidebar.warning("No results to export yet.")

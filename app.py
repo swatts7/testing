@@ -39,7 +39,7 @@ data = load_data(dataset_type)
 # Load system prompt
 if dataset_type not in st.session_state.system_prompt:
     if dataset_type == "Master Summary":
-        file_path = "master_summary_system_prompt.txt"
+        file_path = "master_system_prompt.txt"
     elif dataset_type == "Comment Summary":
         file_path = "comments_system_prompt.txt"
     elif dataset_type == "Reviews Summary":
